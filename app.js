@@ -2,7 +2,29 @@ class FileAccessApp {
     constructor() {
         this.webapp = window.Telegram.WebApp;
         this.statusElement = document.getElementById('status');
+        this.errorElement = document.getElementById('error');
+        this.retryButton = document.getElementById('retryButton');
+        this.infoElement = document.getElementById('info');
+        this.setupEventListeners();
         this.init();
+    }
+
+    setupEventListeners() {
+        // Listen for messages from Telegram
+        window.addEventListener('message', this.handleMessage.bind(this));
+        
+        // Retry button click handler
+        this.retryButton.addEventListener('click', () => {
+            this.hideError();
+            this.init();
+        });
+
+        // Handle visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                this.updateStatus('Ready for file access...');
+            }
+        });
     }
 
     init() {
@@ -13,21 +35,35 @@ class FileAccessApp {
 
             // Get the startapp parameter
             const startApp = this.getStartAppParameter();
-            if (!startApp) {
-                this.showError('No file access code provided');
-                return;
+            if (startApp) {
+                this.processRedirect(startApp);
+            } else {
+                this.updateStatus('Ready for file access...');
+                this.showActiveIndicator();
             }
-
-            // Process the redirect
-            this.processRedirect(startApp);
         } catch (error) {
-            this.showError('Initialization failed');
-            if (CONFIG.DEBUG) console.error('Init Error:', error);
+            this.showError('Initialization failed. Please try again.');
+            console.error('Init Error:', error);
+        }
+    }
+
+    handleMessage(event) {
+        try {
+            const data = event.data;
+            if (typeof data === 'string' && data.startsWith('https://')) {
+                const url = new URL(data);
+                const params = new URLSearchParams(url.search);
+                const startApp = params.get('startapp');
+                if (startApp) {
+                    this.processRedirect(startApp);
+                }
+            }
+        } catch (error) {
+            console.error('Message handling error:', error);
         }
     }
 
     getStartAppParameter() {
-        // Try to get parameter from different sources
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('startapp') || 
                this.webapp.initDataUnsafe?.start_param ||
@@ -36,39 +72,37 @@ class FileAccessApp {
 
     async processRedirect(startApp) {
         try {
-            this.updateStatus('Preparing file access...');
+            this.updateStatus('Processing request...');
             
-            // Get an available bot
-            const botUsername = await this.getAvailableBot();
+            // Get bot username from config
+            const botUsername = CONFIG.DEFAULT_BOT;
             if (!botUsername) {
-                this.showError('No available bot found');
-                return;
+                throw new Error('Bot configuration missing');
             }
 
             // Create the redirect URL
             const tgLink = `tg://resolve?domain=${botUsername}&start=${startApp}`;
             
-            // Update status and redirect
-            this.updateStatus('Redirecting to file...');
+            // Update status
+            this.updateStatus('Accessing files...');
             
-            // Add small delay for smooth transition
-            setTimeout(() => {
+            // Try to use Telegram's native methods first
+            if (this.webapp.openTelegramLink) {
+                await this.webapp.openTelegramLink(tgLink);
+            } else {
                 window.location.href = tgLink;
-                
-                // Fallback button in case automatic redirect fails
-                this.createFallbackButton(tgLink);
-            }, CONFIG.REDIRECT_DELAY);
+            }
+            
+            // Reset status after a delay
+            setTimeout(() => {
+                this.updateStatus('Ready for next file...');
+                this.showActiveIndicator();
+            }, 2000);
 
         } catch (error) {
-            this.showError('Redirect failed');
-            if (CONFIG.DEBUG) console.error('Redirect Error:', error);
+            this.showError('Failed to access files. Please try again.');
+            console.error('Redirect Error:', error);
         }
-    }
-
-    async getAvailableBot() {
-        // In a real implementation, you might want to check bot availability
-        // For now, we'll just return the default bot
-        return CONFIG.DEFAULT_BOT;
     }
 
     updateStatus(message) {
@@ -78,24 +112,20 @@ class FileAccessApp {
     }
 
     showError(message) {
-        this.updateStatus('');
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error';
-        errorDiv.textContent = message;
-        document.getElementById('main').appendChild(errorDiv);
+        this.errorElement.textContent = message;
+        this.errorElement.style.display = 'block';
+        this.retryButton.style.display = 'inline-block';
+        this.updateStatus('Error occurred');
     }
 
-    createFallbackButton(link) {
-        const button = document.createElement('button');
-        button.className = 'button';
-        button.textContent = 'Click here if not redirected';
-        button.onclick = () => window.location.href = link;
-        
-        // Show button after a delay if redirect hasn't worked
-        setTimeout(() => {
-            button.style.display = 'inline-block';
-            document.getElementById('main').appendChild(button);
-        }, 3000);
+    hideError() {
+        this.errorElement.style.display = 'none';
+        this.retryButton.style.display = 'none';
+    }
+
+    showActiveIndicator() {
+        this.infoElement.innerHTML = '<span class="active-indicator"></span> Mini App Active';
+        this.infoElement.style.display = 'block';
     }
 }
 
