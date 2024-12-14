@@ -12,11 +12,17 @@ body {
 
 #main {
     text-align: center;
+    padding: 20px;
+    border-radius: 12px;
+    background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-width: 90%;
+    width: 300px;
 }
 
 .loader {
-    border: 4px solid var(--tg-theme-hint-color, #cccccc);
-    border-top: 4px solid var(--tg-theme-button-color, #3390ec);
+    border: 3px solid var(--tg-theme-hint-color, #cccccc);
+    border-top: 3px solid var(--tg-theme-button-color, #3390ec);
     border-radius: 50%;
     width: 40px;
     height: 40px;
@@ -32,13 +38,27 @@ body {
 #status {
     margin-top: 15px;
     font-size: 16px;
+    color: var(--tg-theme-text-color, #000000);
+    font-weight: 500;
+}
+
+#info {
+    margin-top: 12px;
+    font-size: 13px;
     color: var(--tg-theme-hint-color, #999999);
+    opacity: 0.8;
 }
 
 .error {
     color: var(--tg-theme-destructive-text-color, #ff0000);
     margin-top: 20px;
     font-size: 14px;
+    display: none;
+    padding: 10px;
+    border-radius: 6px;
+    background-color: var(--tg-theme-destructive-text-color, #ff0000);
+    color: white;
+    opacity: 0.9;
 }
 
 .button {
@@ -50,5 +70,37 @@ body {
     cursor: pointer;
     margin-top: 20px;
     font-size: 14px;
+    font-weight: 500;
     display: none;
+    transition: opacity 0.3s;
+}
+
+.button:hover {
+    opacity: 0.9;
+}
+
+.success {
+    color: var(--tg-theme-text-color, #000000);
+    background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 15px;
+    font-size: 14px;
+    display: none;
+}
+
+.active-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: #4CAF50;
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
 }
