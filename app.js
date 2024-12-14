@@ -5,34 +5,14 @@ class FileAccessApp {
         this.errorElement = document.getElementById('error');
         this.retryButton = document.getElementById('retryButton');
         this.infoElement = document.getElementById('info');
-        this.setupEventListeners();
         this.init();
-    }
-
-    setupEventListeners() {
-        // Listen for messages from Telegram
-        window.addEventListener('message', this.handleMessage.bind(this));
-        
-        // Retry button click handler
-        this.retryButton.addEventListener('click', () => {
-            this.hideError();
-            this.init();
-        });
-
-        // Handle visibility change
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                this.updateStatus('Ready for file access...');
-            }
-        });
     }
 
     init() {
         try {
             // Initialize Telegram WebApp
             this.webapp.ready();
-            this.webapp.expand();
-
+            
             // Get the startapp parameter
             const startApp = this.getStartAppParameter();
             if (startApp) {
@@ -47,57 +27,31 @@ class FileAccessApp {
         }
     }
 
-    handleMessage(event) {
-        try {
-            const data = event.data;
-            if (typeof data === 'string' && data.startsWith('https://')) {
-                const url = new URL(data);
-                const params = new URLSearchParams(url.search);
-                const startApp = params.get('startapp');
-                if (startApp) {
-                    this.processRedirect(startApp);
-                }
-            }
-        } catch (error) {
-            console.error('Message handling error:', error);
-        }
-    }
-
     getStartAppParameter() {
         const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('startapp') || 
-               this.webapp.initDataUnsafe?.start_param ||
-               null;
+        const startApp = urlParams.get('startapp');
+        console.log('Start parameter:', startApp); // Debug log
+        return startApp;
     }
 
-    async processRedirect(startApp) {
+    processRedirect(startApp) {
         try {
             this.updateStatus('Processing request...');
             
-            // Get bot username from config
-            const botUsername = CONFIG.DEFAULT_BOT;
-            if (!botUsername) {
-                throw new Error('Bot configuration missing');
-            }
-
-            // Create the redirect URL
-            const tgLink = `tg://resolve?domain=${botUsername}&start=${startApp}`;
+            // Create both types of links
+            const tgLink = `tg://resolve?domain=${CONFIG.DEFAULT_BOT}&start=${startApp}`;
+            const httpLink = `https://t.me/${CONFIG.DEFAULT_BOT}?start=${startApp}`;
             
-            // Update status
+            // Try multiple redirection methods
             this.updateStatus('Accessing files...');
             
-            // Try to use Telegram's native methods first
-            if (this.webapp.openTelegramLink) {
-                await this.webapp.openTelegramLink(tgLink);
-            } else {
-                window.location.href = tgLink;
-            }
+            // Method 1: Direct location change
+            window.location.href = tgLink;
             
-            // Reset status after a delay
+            // Method 2: Fallback after a short delay
             setTimeout(() => {
-                this.updateStatus('Ready for next file...');
-                this.showActiveIndicator();
-            }, 2000);
+                window.location.href = httpLink;
+            }, 1000);
 
         } catch (error) {
             this.showError('Failed to access files. Please try again.');
@@ -112,20 +66,20 @@ class FileAccessApp {
     }
 
     showError(message) {
-        this.errorElement.textContent = message;
-        this.errorElement.style.display = 'block';
-        this.retryButton.style.display = 'inline-block';
-        this.updateStatus('Error occurred');
-    }
-
-    hideError() {
-        this.errorElement.style.display = 'none';
-        this.retryButton.style.display = 'none';
+        if (this.errorElement) {
+            this.errorElement.textContent = message;
+            this.errorElement.style.display = 'block';
+        }
+        if (this.retryButton) {
+            this.retryButton.style.display = 'inline-block';
+        }
     }
 
     showActiveIndicator() {
-        this.infoElement.innerHTML = '<span class="active-indicator"></span> Mini App Active';
-        this.infoElement.style.display = 'block';
+        if (this.infoElement) {
+            this.infoElement.innerHTML = '<span class="active-indicator"></span> Mini App Active';
+            this.infoElement.style.display = 'block';
+        }
     }
 }
 
