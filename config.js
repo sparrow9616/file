@@ -1,13 +1,15 @@
 const CONFIG = {
-    // List of active bots - Add your bot usernames here
-    BOTS: [
-        "fileshare9616_bot",
-        "your_backup_bot"
-    ],
-    // Default bot to use if no others are available
+    // Your bot username (without @)
     DEFAULT_BOT: "fileshare9616_bot",
+    
+    // Backup bots if needed
+    BOTS: [
+        "your_bot_username"
+    ],
+    
     // Delay before redirect (in milliseconds)
-    REDIRECT_DELAY: 1000,
-    // Debug mode - set to true to see console logs
+    REDIRECT_DELAY: 500,
+    
+    // Debug mode
     DEBUG: false
 };
